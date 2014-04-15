@@ -8,14 +8,20 @@
 #define PWM_RESOLUTION 10000
 #define PWM_PERCENT(x) ( (x) * PWM_RESOLUTION / 100 )
 
+#define MOTOR_PULSES 64
+
 struct motor_t {
   out port enable;
   out port a;
   out port b;
+
+  in port ?hall[2];
 };
 
 interface motor_i {
   void set(signed speed);
+
+  { unsigned, signed char } rpm();
 };
 
 typedef interface motor_i client motor_client;

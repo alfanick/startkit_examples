@@ -6,8 +6,8 @@
 void logic(motor_client left_motor, motor_client right_motor);
 
 struct motor_t motors[2] = {
-  { XS1_PORT_1P, XS1_PORT_1O, XS1_PORT_1N },
-  { XS1_PORT_1M, XS1_PORT_1L, XS1_PORT_1K }
+  { XS1_PORT_1P, XS1_PORT_1O, XS1_PORT_1N, {null, null} },
+  { XS1_PORT_1M, XS1_PORT_1L, XS1_PORT_1K, {null, null} }
 };
 
 int main() {

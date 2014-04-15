@@ -27,6 +27,9 @@ void motor(interface motor_i server i, struct motor_t &pin) {
         }
         break;
 
+      case i.rpm() -> { unsigned rpm, signed char direction }:
+        break;
+
       case duty != 0 => t when timerafter(time) :> void:
         pin.enable <: state;
         time += PWM_SCALE * (state ? duty : (PWM_RESOLUTION - duty));
