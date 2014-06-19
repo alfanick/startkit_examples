@@ -5,8 +5,8 @@
 #include <distance_sensor.h>
 
 struct distance_sensor_t distance_sensors[2] = {
-  { XS1_PORT_1P, XS1_PORT_1O },
-  { XS1_PORT_1M, XS1_PORT_1L }
+  { XS1_PORT_1I, XS1_PORT_1J },
+  { XS1_PORT_1K, XS1_PORT_1L }
 };
 
 void logic(interface distance_sensor_i client front, interface distance_sensor_i client rear);
