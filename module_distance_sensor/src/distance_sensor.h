@@ -8,6 +8,7 @@ struct distance_sensor_t {
   out port trigger;
   in port echo;
 };
+typedef struct distance_sensor_t distance_sensor_t;
 
 interface distance_sensor_i {
   unsigned read();

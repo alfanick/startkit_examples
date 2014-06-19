@@ -5,7 +5,7 @@
 #include <lsm303d.h>
 
 lsm303d_t lsm303d_pin = {
-  XS1_PORT_1I,
+  XS1_PORT_1G,
   XS1_PORT_1H,
   250
 };
