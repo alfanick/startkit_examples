@@ -30,17 +30,34 @@ void motor(interface motor_i server i, motor_t &pin) {
 }
 
 #define ABS(x) ((x) > 0 ? (x) : -(x))
+#define UPDATE(where, shift, value) (where) = ((where) & (~(3 << (shift)))) | ((value) << (shift))
 
 void motors_logic(interface motors_i server i, interface motor_i client left, interface motor_i client right, out port directions) {
-  directions <: 0b1001;
+  unsigned current_directions = 0b0000;
 
   while (1) {
     select {
       case i.left(signed speed):
+        if (speed > 0) {
+          UPDATE(current_directions, 0, 0b10);
+        } else
+        if (speed < 0) {
+          UPDATE(current_directions, 0, 0b01);
+        }
+
+        directions <: current_directions;
         left.set(ABS(speed));
         break;
 
       case i.right(signed speed):
+        if (speed > 0) {
+          UPDATE(current_directions, 2, 0b01);
+        } else
+        if (speed < 0) {
+          UPDATE(current_directions, 2, 0b10);
+        }
+
+        directions <: current_directions;
         right.set(ABS(speed));
         break;
     }

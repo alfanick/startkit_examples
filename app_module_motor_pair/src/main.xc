@@ -25,8 +25,8 @@ int main() {
 }
 
 void logic(motors_client motors) {
-  motors.left(PWM_PERCENT(80));
-  motors.right(PWM_PERCENT(40));
+  motors.left(-PWM_PERCENT(80));
+  motors.right(PWM_PERCENT(80));
 
 }
 
