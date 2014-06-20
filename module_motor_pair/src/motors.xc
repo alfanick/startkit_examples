@@ -43,6 +43,8 @@ void motors_logic(interface motors_i server i, interface motor_i client left, in
         } else
         if (speed < 0) {
           UPDATE(current_directions, 0, 0b01);
+        } else {
+          UPDATE(current_directions, 0, 0b00);
         }
 
         directions <: current_directions;
@@ -55,6 +57,8 @@ void motors_logic(interface motors_i server i, interface motor_i client left, in
         } else
         if (speed < 0) {
           UPDATE(current_directions, 2, 0b10);
+        } else {
+          UPDATE(current_directions, 2, 0b00);
         }
 
         directions <: current_directions;
