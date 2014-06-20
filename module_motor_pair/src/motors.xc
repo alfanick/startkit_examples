@@ -75,11 +75,11 @@ void motors(interface motors_i server i, motors_t &pin) {
   par {
     motors_logic(i, left, right, pin.directions);
 
-//    [[combine]]
- //   par {
+    [[combine]]
+    par {
       motor(left, pin.left);
       motor(right, pin.right);
-  //  }
+    }
   }
 
 }
