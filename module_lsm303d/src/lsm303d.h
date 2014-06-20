@@ -36,3 +36,4 @@ inline void lsm303d_read_magnetometer(lsm303d_t &pin, vector3d &v);
 void lsm303d(interface lsm303d_i server i, lsm303d_t &pin);
 
 #endif
+/* vim: set ft=xc: */

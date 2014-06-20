@@ -28,7 +28,7 @@ int main() {
 
 void logic(motor_client left_motor, motor_client right_motor) {
   left_motor.set(-PWM_PERCENT(25));
-  right_motor.set(PWM_PERCENT(17));
+  right_motor.set(PWM_PERCENT(0));
 
   timer t;
   unsigned time;
