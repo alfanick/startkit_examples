@@ -70,5 +70,3 @@ void motors_logic(interface motors_i server i, interface motor_i client left, in
 
 }
 
-}
-
