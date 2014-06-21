@@ -37,7 +37,9 @@ typedef interface motors_i client motors_client;
 [[combinable]]
 void motor(interface motor_i server i, motor_t &pin);
 
-void motors(interface motors_i server i, motors_t &pin);
+[[combinable]]
+void motors_logic(interface motors_i server i, interface motor_i client left,
+    inteface motor_i client right, out port directions);
 
 
 #endif

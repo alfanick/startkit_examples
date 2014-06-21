@@ -32,6 +32,7 @@ void motor(interface motor_i server i, motor_t &pin) {
 #define ABS(x) ((x) > 0 ? (x) : -(x))
 #define UPDATE(where, shift, value) (where) = ((where) & (~(3 << (shift)))) | ((value) << (shift))
 
+[[combinable]]
 void motors_logic(interface motors_i server i, interface motor_i client left, interface motor_i client right, out port directions) {
   unsigned current_directions = 0b0000;
 
@@ -68,19 +69,6 @@ void motors_logic(interface motors_i server i, interface motor_i client left, in
   }
 
 }
-
-void motors(interface motors_i server i, motors_t &pin) {
-  interface motor_i left, right;
-
-  par {
-    motors_logic(i, left, right, pin.directions);
-
-    [[combine]]
-    par {
-      motor(left, pin.left);
-      motor(right, pin.right);
-    }
-  }
 
 }
 
