@@ -87,7 +87,7 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
         break;
 
       case t when timerafter(time) :> void:
-        time += 100 * XS1_TIMER_KHZ;
+        time += 5 * XS1_TIMER_KHZ;
 
         lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
         lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
