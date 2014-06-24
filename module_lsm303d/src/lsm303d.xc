@@ -24,7 +24,7 @@ void lsm303d_init(lsm303d_t &pin) {
   i2c_master_write_reg(LSM303D_ADDRESS, 0x25, data, 1, pin);
 
   // enable mag
-  data[0] = 0b00100000;
+  data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x26, data, 1, pin);
 
 }
