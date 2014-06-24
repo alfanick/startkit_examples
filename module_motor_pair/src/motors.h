@@ -4,8 +4,8 @@
 #include <xs1.h>
 #include <platform.h>
 
-#define PWM_SCALE 10
-#define PWM_RESOLUTION 50000
+#define PWM_SCALE 200000
+#define PWM_RESOLUTION 1000
 #define PWM_PERCENT(x) ( (x) * PWM_RESOLUTION / 100 )
 
 #define MOTOR_PULSES 64

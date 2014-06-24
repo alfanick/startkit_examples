@@ -4,25 +4,26 @@
 void motor(interface motor_i server i, motor_t &pin) {
   timer t;
   unsigned duty = 0, state = 0, time;
+  const unsigned delay = XS1_TIMER_HZ / PWM_SCALE;
 
   t :> time;
 
   while (1) {
     select {
       case i.set(unsigned speed):
-        if (speed > 0) {
-          duty = speed;
-          pin.disable <: 0;
-        } else {
-          duty = 0;
-          pin.disable <: 1;
-        }
+        duty = speed;
         break;
 
-      case duty != 0 => t when timerafter(time) :> void:
-        pin.disable <: !state;
-        time += PWM_SCALE * (state ? duty : (PWM_RESOLUTION - duty));
-        state = !state;
+      case t when timerafter(time) :> void:
+        if (duty == 0)
+          pin.disable <: 0;
+        else
+          pin.disable <: (state++ >= duty);
+
+        time += delay;
+
+        if (state == PWM_RESOLUTION)
+          state = 0;
 
         break;
     }
