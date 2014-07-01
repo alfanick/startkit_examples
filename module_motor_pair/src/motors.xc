@@ -33,9 +33,41 @@ void motor(interface motor_i server i, motor_t &pin) {
 #define ABS(x) ((x) > 0 ? (x) : -(x))
 #define UPDATE(where, shift, value) (where) = ((where) & (~(3 << (shift)))) | ((value) << (shift))
 
+void hall_update(unsigned hall, unsigned state[2], unsigned time[2][2], timer t) {
+  unsigned current_state, current_time;
+
+  t :> current_time;
+
+  current_state = (hall & 0b1100) >> 2;
+  if (state[0] != current_state) {
+    state[0] = current_state;
+    time[0][1] = time[0][0];
+    time[0][0] = current_time;
+  }
+
+  current_state = (hall & 0b0011);
+  if (state[1] != current_state) {
+    state[1] = current_state;
+    time[1][1] = time[1][0];
+    time[1][0] = current_time;
+  }
+}
+
 [[combinable]]
-void motors_logic(interface motors_i server i, interface motor_i client left, interface motor_i client right, out port directions) {
+void motors_logic(interface motors_i server i,
+                  interface motor_i client left,
+                  interface motor_i client right,
+                  out port directions, in port sensors) {
   unsigned current_directions = 0b0000;
+  unsigned hall;
+  unsigned hall_state[2];
+  unsigned hall_time[2][2] = { {0, 0}, {0, 0} };
+  timer t;
+  unsigned time;
+
+  t :> time;
+  sensors :> hall;
+  hall_update(hall, hall_state, hall_time, t);
 
   while (1) {
     select {
@@ -65,6 +97,32 @@ void motors_logic(interface motors_i server i, interface motor_i client left, in
 
         directions <: current_directions;
         right.set(ABS(speed));
+        break;
+
+      case i.left_rpm() -> int rpm:
+        if (hall_time[1][0] == 0)
+          rpm = 0;
+        else
+          rpm = 64 * 60 * 1000 / (hall_time[1][0] - hall_time[1][1]);
+        break;
+
+      case i.right_rpm() -> int rpm:
+        if (hall_time[0][0] == 0)
+          rpm = 0;
+        else
+          rpm = 64 * 60 * 1000 / (hall_time[0][0] - hall_time[0][1]);
+        break;
+
+      case t when timerafter(time) :> void:
+        hall_time[0][0] = 0;
+        hall_time[1][0] = 0;
+        hall_time[0][1] = 0;
+        hall_time[1][1] = 0;
+        time += 1000 * XS1_TIMER_KHZ;
+        break;
+
+      case sensors when pinsneq(hall) :> hall:
+        hall_update(hall, hall_state, hall_time, t);
         break;
     }
   }

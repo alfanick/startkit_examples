@@ -21,6 +21,7 @@ struct motors_t {
   motor_t right;
 
   out port directions;
+  in port sensors;
 };
 typedef struct motors_t motors_t;
 
@@ -31,6 +32,9 @@ interface motor_i {
 interface motors_i {
   void left(signed speed);
   void right(signed speed);
+
+  int left_rpm();
+  int right_rpm();
 };
 typedef interface motors_i client motors_client;
 
@@ -39,7 +43,7 @@ void motor(interface motor_i server i, motor_t &pin);
 
 [[combinable]]
 void motors_logic(interface motors_i server i, interface motor_i client left,
-    interface motor_i client right, out port directions);
+    interface motor_i client right, out port directions, in port sensors);
 
 
 #endif
