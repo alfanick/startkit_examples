@@ -31,15 +31,29 @@ void motor(interface motor_i server i, motor_t &pin) {
 }
 
 #define ABS(x) ((x) > 0 ? (x) : -(x))
+#define SIGN(x) ((x) > 0 ? 1 : (x) < 0 ? -1 : 0)
 #define UPDATE(where, shift, value) (where) = ((where) & (~(3 << (shift)))) | ((value) << (shift))
+#define DIRECTION(previous, current, rpm) ( (previous == 0b00 && current == 0b10) || \
+                                            (previous == 0b01 && current == 0b00) || \
+                                            (previous == 0b11 && current == 0b01) || \
+                                            (previous == 0b10 && current == 0b11) ? -1 : \
+                                            (previous == 0b00 && current == 0b01) || \
+                                            (previous == 0b01 && current == 0b11) || \
+                                            (previous == 0b11 && current == 0b10) || \
+                                            (previous == 0b10 && current == 0b00) ? 1 : \
+                                            (SIGN(rpm) | 1) )
 
-void hall_update(unsigned hall, unsigned state[2], unsigned time[2][2], timer t) {
+{ int, int } hall_update(unsigned hall, timer t) {
   unsigned current_state, current_time;
+  static int rpm[2] = { 1, 1 };
+  static unsigned time[2][2] = { {0, 0}, {0, 0} };
+  static unsigned state[2];
 
   t :> current_time;
 
   current_state = (hall & 0b1100) >> 2;
   if (state[0] != current_state) {
+    rpm[0] = DIRECTION(state[0], current_state, rpm[0]);
     state[0] = current_state;
     time[0][1] = time[0][0];
     time[0][0] = current_time;
@@ -47,10 +61,21 @@ void hall_update(unsigned hall, unsigned state[2], unsigned time[2][2], timer t)
 
   current_state = (hall & 0b0011);
   if (state[1] != current_state) {
+    rpm[1] = -DIRECTION(state[1], current_state, rpm[1]);
     state[1] = current_state;
     time[1][1] = time[1][0];
     time[1][0] = current_time;
   }
+
+  if (time[0][1] != 0) {
+    rpm[0] *= 60 * XS1_TIMER_HZ / (time[0][0] - time[0][1]) / 1216;
+  }
+
+  if (time[1][1] != 0) {
+    rpm[1] *= 60 * XS1_TIMER_HZ / (time[1][0] - time[1][1]) / 1216;
+  }
+
+  return { rpm[1], rpm[0] };
 }
 
 [[combinable]]
@@ -60,14 +85,13 @@ void motors_logic(interface motors_i server i,
                   out port directions, in port sensors) {
   unsigned current_directions = 0b0000;
   unsigned hall;
-  unsigned hall_state[2];
-  unsigned hall_time[2][2] = { {0, 0}, {0, 0} };
   timer t;
   unsigned time;
+  int left_rpm = 0, right_rpm = 0;
 
   t :> time;
   sensors :> hall;
-  hall_update(hall, hall_state, hall_time, t);
+  { left_rpm, right_rpm } = hall_update(hall, t);
 
   while (1) {
     select {
@@ -100,29 +124,21 @@ void motors_logic(interface motors_i server i,
         break;
 
       case i.left_rpm() -> int rpm:
-        if (hall_time[1][0] == 0)
-          rpm = 0;
-        else
-          rpm = 64 * 60 * 1000 / (hall_time[1][0] - hall_time[1][1]);
+        rpm = left_rpm;
         break;
 
       case i.right_rpm() -> int rpm:
-        if (hall_time[0][0] == 0)
-          rpm = 0;
-        else
-          rpm = 64 * 60 * 1000 / (hall_time[0][0] - hall_time[0][1]);
+        rpm = right_rpm;
         break;
 
       case t when timerafter(time) :> void:
-        hall_time[0][0] = 0;
-        hall_time[1][0] = 0;
-        hall_time[0][1] = 0;
-        hall_time[1][1] = 0;
+        left_rpm = 0;
+        right_rpm = 0;
         time += 1000 * XS1_TIMER_KHZ;
         break;
 
       case sensors when pinsneq(hall) :> hall:
-        hall_update(hall, hall_state, hall_time, t);
+        { left_rpm, right_rpm } = hall_update(hall, t);
         break;
     }
   }
