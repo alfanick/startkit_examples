@@ -3,7 +3,7 @@
 [[combinable]]
 void motor(interface motor_i server i, motor_t &pin) {
   timer t;
-  unsigned duty = 0, state = 0, time, status;
+  unsigned duty = 0, state = 0, time, status, disabled = 1;
   const unsigned delay = XS1_TIMER_HZ / PWM_SCALE;
 
   t :> time;
@@ -15,7 +15,7 @@ void motor(interface motor_i server i, motor_t &pin) {
         duty = speed;
         break;
 
-      case pin.status when pinsneq(status) :> status:
+      case !disabled => pin.status when pinsneq(status) :> status:
         i.status_changed();
         break;
 
@@ -25,9 +25,11 @@ void motor(interface motor_i server i, motor_t &pin) {
 
       case t when timerafter(time) :> void:
         if (duty == 0)
-          pin.disable <: 0;
+          disabled = 0;
         else
-          pin.disable <: (state++ >= duty);
+          disabled = (state++ >= duty);
+
+        pin.disable <: disabled;
 
         time += delay;
 
