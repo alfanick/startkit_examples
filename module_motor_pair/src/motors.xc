@@ -3,15 +3,24 @@
 [[combinable]]
 void motor(interface motor_i server i, motor_t &pin) {
   timer t;
-  unsigned duty = 0, state = 0, time;
+  unsigned duty = 0, state = 0, time, status;
   const unsigned delay = XS1_TIMER_HZ / PWM_SCALE;
 
   t :> time;
+  pin.status :> status;
 
   while (1) {
     select {
       case i.set(unsigned speed):
         duty = speed;
+        break;
+
+      case pin.status when pinsneq(status) :> status:
+        i.status_changed();
+        break;
+
+      case i.status() -> int s:
+        s = status;
         break;
 
       case t when timerafter(time) :> void:
@@ -80,6 +89,7 @@ void motor(interface motor_i server i, motor_t &pin) {
 
 [[combinable]]
 void motors_logic(interface motors_i server i,
+                  interface motors_status_i server status,
                   interface motor_i client left,
                   interface motor_i client right,
                   out port directions, in port sensors) {
@@ -129,6 +139,19 @@ void motors_logic(interface motors_i server i,
 
       case i.right_rpm() -> int rpm:
         rpm = right_rpm;
+        break;
+
+      case left.status_changed():
+        status.changed();
+        break;
+
+      case right.status_changed():
+        status.changed();
+        break;
+
+      case status.get() -> { int l, int r }:
+        l = left.status();
+        r = right.status();
         break;
 
       case t when timerafter(time) :> void:

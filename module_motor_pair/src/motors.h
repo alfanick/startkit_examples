@@ -27,7 +27,22 @@ typedef struct motors_t motors_t;
 
 interface motor_i {
   void set(unsigned speed);
+
+  [[notification]]
+  slave void status_changed(void);
+
+  [[clears_notification]]
+  int status();
 };
+
+interface motors_status_i {
+  [[notification]]
+  slave void changed(void);
+
+  [[clears_notification]]
+  { int, int } get();
+};
+typedef interface motors_status_i client motors_status_client;
 
 interface motors_i {
   void left(signed speed);
@@ -42,8 +57,13 @@ typedef interface motors_i client motors_client;
 void motor(interface motor_i server i, motor_t &pin);
 
 [[combinable]]
-void motors_logic(interface motors_i server i, interface motor_i client left,
-    interface motor_i client right, out port directions, in port sensors);
+void motors_logic(interface motors_i server i, interface motors_status_i server status,
+    interface motor_i client left,
+    interface motor_i client right,
+    out port directions,
+    in port sensors);
 
 
 #endif
+
+/* vim: set ft=xc: */
