@@ -1,4 +1,25 @@
 #include "bluetooth.h"
+#include <platform.h>
+
+void send(streaming chanend bout, const unsigned char* data, int length) {
+  timer t; unsigned time;
+
+  t :> time;
+  for (int i = 0; i < length; i++) {
+    bout <: data[i];
+    time += 5 * XS1_TIMER_KHZ;
+    t when timerafter(time) :> void;
+  }
+}
+
+void reverse(unsigned char* a, int l) {
+  unsigned char t;
+  for (int i = 0; i <= l/2; i++) {
+    t = a[i];
+    a[i] = a[l-i];
+    a[l-i] = t;
+  }
+}
 
 [[combinable]]
 void bluetooth_uart(interface bluetooth_i server i, streaming chanend bin, streaming chanend bout) {
@@ -8,8 +29,30 @@ void bluetooth_uart(interface bluetooth_i server i, streaming chanend bin, strea
   while (1) {
     select {
       case i.send(const unsigned char* data, int length):
-        for (int i = 0; i < length; i++)
-          bout <: data[i];
+        send(bout, data, length);
+        break;
+
+      case i.send_number(int number):
+        unsigned char representation[32] = "";
+        int length = 0;
+        int original = number;
+
+        if (number < 0)
+          number = -number;
+
+        while (number != 0) {
+          int digit = number % 10;
+          representation[length++] = (digit > 9)? (digit - 10) + 'a' : digit + '0';
+          number /= 10;
+        }
+
+        if (original < 0)
+          representation[length++] = '-';
+
+        reverse(representation, length-1);
+        representation[length++] = '\r';
+
+        send(bout, representation, length);
         break;
 
       case i.read(unsigned char data[], int &length):
