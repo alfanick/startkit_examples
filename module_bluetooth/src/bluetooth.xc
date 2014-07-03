@@ -2,13 +2,8 @@
 #include <platform.h>
 
 void send(streaming chanend bout, const unsigned char* data, int length) {
-  timer t; unsigned time;
-
-  t :> time;
   for (int i = 0; i < length; i++) {
     bout <: data[i];
-    time += 5 * XS1_TIMER_KHZ;
-    t when timerafter(time) :> void;
   }
 }
 
