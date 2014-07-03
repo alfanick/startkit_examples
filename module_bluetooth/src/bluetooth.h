@@ -5,6 +5,7 @@ interface bluetooth_i {
   void send(const char* data, int length);
 
   void send_number(int i);
+  void send_numbers(int a[], int n);
 
   [[notification]]
   slave void incoming();

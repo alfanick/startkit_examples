@@ -21,6 +21,31 @@ void reverse(unsigned char* a, int l) {
   }
 }
 
+void send_number(streaming chanend bout, int number) {
+  unsigned char representation[32] = "";
+  int length = 0;
+  int original = number;
+
+  if (number < 0)
+    number = -number;
+  else if (number == 0)
+    representation[length++] = '0';
+
+  while (number != 0) {
+    int digit = number % 10;
+    representation[length++] = (digit > 9)? (digit - 10) + 'a' : digit + '0';
+    number /= 10;
+  }
+
+  if (original < 0)
+    representation[length++] = '-';
+
+  reverse(representation, length-1);
+
+  send(bout, representation, length);
+}
+
+
 [[combinable]]
 void bluetooth_uart(interface bluetooth_i server i, streaming chanend bin, streaming chanend bout) {
   unsigned char buffer[128];
@@ -33,26 +58,16 @@ void bluetooth_uart(interface bluetooth_i server i, streaming chanend bin, strea
         break;
 
       case i.send_number(int number):
-        unsigned char representation[32] = "";
-        int length = 0;
-        int original = number;
+        send_number(bout, number);
+        bout <: '\r';
+        break;
 
-        if (number < 0)
-          number = -number;
+      case i.send_numbers(int a[], int n):
+        for (int i = 0; i < n; i++) {
+          send_number(bout, a[i]);
 
-        while (number != 0) {
-          int digit = number % 10;
-          representation[length++] = (digit > 9)? (digit - 10) + 'a' : digit + '0';
-          number /= 10;
+          bout <: i != n-1 ? ',' : '\r';
         }
-
-        if (original < 0)
-          representation[length++] = '-';
-
-        reverse(representation, length-1);
-        representation[length++] = '\r';
-
-        send(bout, representation, length);
         break;
 
       case i.read(unsigned char data[], int &length):
