@@ -68,6 +68,8 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
   vector3d acc_buffer[3], mag_buffer[3];
   unsigned acc_position = 0, mag_position = 0;
 
+  unsigned need_new = 1;
+
   lsm303d_init(pin);
   t :> time;
 
@@ -75,18 +77,22 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
     select {
       case i.accelerometer_raw(vector3d &v):
         v = acc_buffer[acc_position];
+        need_new = 1;
         break;
       case i.accelerometer(vector3d &v):
         v = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
+        need_new = 1;
         break;
       case i.magnetometer_raw(vector3d &v):
         v = mag_buffer[mag_position];
+        need_new = 1;
         break;
       case i.magnetometer(vector3d &v):
         v = median_vector3d(mag_buffer[0], mag_buffer[1], mag_buffer[2]);
+        need_new = 1;
         break;
 
-      case t when timerafter(time) :> void:
+      case need_new => t when timerafter(time) :> void:
         time += 3 * XS1_TIMER_KHZ;
 
         lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
@@ -94,6 +100,7 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
 
         acc_position %= 3;
         mag_position %= 3;
+        need_new = 0;
 
         break;
     }
