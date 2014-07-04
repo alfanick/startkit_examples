@@ -13,6 +13,7 @@ void motor(interface motor_i server i, motor_t &pin) {
     select {
       case i.set(unsigned speed):
         duty = speed;
+        state = 0;
         break;
 
       case !disabled => pin.status when pinsneq(status) :> status:
