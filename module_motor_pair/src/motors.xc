@@ -1,29 +1,26 @@
 #include "motors.h"
 
 [[combinable]]
-void motor(interface motor_i server i, motor_t &pin) {
-  timer t;
-  unsigned duty = 0, state = 0, time, status, disabled = 1;
+void motor(interface motor_i server i, in port pin_status, chanend pwm) {
+  unsigned status;
   const unsigned delay = XS1_TIMER_HZ / PWM_SCALE;
 
-  t :> time;
-  pin.status :> status;
+  pin_status :> status;
 
   while (1) {
     select {
       case i.set(unsigned speed):
-        duty = speed;
-        state = 0;
+        pwm <: speed == 0 ? 2048 : (2048 - speed);
         break;
 
-      case !disabled => pin.status when pinsneq(status) :> status:
+      /*case pin_status when pinsneq(status) :> status:
         i.status_changed();
         break;
-
+*/
       case i.status() -> int s:
         s = status;
         break;
-
+/*
       case t when timerafter(time) :> void:
         if (duty == 0)
           disabled = 0;
@@ -36,7 +33,7 @@ void motor(interface motor_i server i, motor_t &pin) {
 
         if (state == PWM_RESOLUTION)
           state = 0;
-
+*/
         break;
     }
   }

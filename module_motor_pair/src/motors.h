@@ -4,6 +4,8 @@
 #include <xs1.h>
 #include <platform.h>
 
+#include <pwm_singlebit_port.h>
+
 #define PWM_SCALE 200000
 #define PWM_RESOLUTION 2000
 #define PWM_PERCENT(x) ( (x) * PWM_RESOLUTION / 100 )
@@ -11,8 +13,9 @@
 #define MOTOR_PULSES 64
 
 struct motor_t {
-  out port disable;
+  out buffered port:32 disable[1];
   in port status;
+  clock pwm_clock;
 };
 typedef struct motor_t motor_t;
 
@@ -54,7 +57,7 @@ interface motors_i {
 typedef interface motors_i client motors_client;
 
 [[combinable]]
-void motor(interface motor_i server i, motor_t &pin);
+void motor(interface motor_i server i, in port status, chanend pwm);
 
 [[combinable]]
 void motors_logic(interface motors_i server i, interface motors_status_i server status,
