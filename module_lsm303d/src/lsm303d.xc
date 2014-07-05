@@ -92,7 +92,7 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
         need_new = 1;
         break;
 
-      case need_new => t when timerafter(time) :> void:
+      case /*need_new =>*/ t when timerafter(time) :> void:
         time += 3 * XS1_TIMER_KHZ;
 
         lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
