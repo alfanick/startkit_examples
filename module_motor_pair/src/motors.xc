@@ -15,7 +15,7 @@ void motor(interface motor_i server i, motor_t &pin) {
         disabled = 0;
 
         if (speed == 0)
-          pin.disable <: 0;
+          pin.disable <: 1;
         else if (speed < 500)
           duty = 500;
         break;
