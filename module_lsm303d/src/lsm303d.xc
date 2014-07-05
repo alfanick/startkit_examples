@@ -7,7 +7,7 @@ void lsm303d_init(lsm303d_t &pin) {
   unsigned char data[1];
   i2c_master_init(pin);
 
-  // enable acc
+  // 1600Hz
   data[0] = 0b10100111;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x20, data, 1, pin);
 
@@ -15,12 +15,12 @@ void lsm303d_init(lsm303d_t &pin) {
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x21, data, 1, pin);
 
-  // temp and high res
-  data[0] = 0b11110100;
+  // no temp and high res
+  data[0] = 0b01110000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x24, data, 1, pin);
 
-  // mag = 8g
-  data[0] = 0b01000000;
+  // mag = 2g
+  data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x25, data, 1, pin);
 
   // enable mag
@@ -68,8 +68,6 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
   vector3d acc_buffer[3], mag_buffer[3];
   unsigned acc_position = 0, mag_position = 0;
 
-  unsigned need_new = 1;
-
   lsm303d_init(pin);
   t :> time;
 
@@ -77,30 +75,25 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
     select {
       case i.accelerometer_raw(vector3d &v):
         v = acc_buffer[acc_position];
-        need_new = 1;
         break;
       case i.accelerometer(vector3d &v):
         v = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
-        need_new = 1;
         break;
       case i.magnetometer_raw(vector3d &v):
         v = mag_buffer[mag_position];
-        need_new = 1;
         break;
       case i.magnetometer(vector3d &v):
         v = median_vector3d(mag_buffer[0], mag_buffer[1], mag_buffer[2]);
-        need_new = 1;
         break;
 
-      case /*need_new =>*/ t when timerafter(time) :> void:
-        time += 3 * XS1_TIMER_KHZ;
+      case t when timerafter(time) :> void:
+        time += 1 * XS1_TIMER_KHZ;
 
         lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
         lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
 
         acc_position %= 3;
         mag_position %= 3;
-        need_new = 0;
 
         break;
     }

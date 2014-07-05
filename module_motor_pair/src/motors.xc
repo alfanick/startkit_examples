@@ -3,8 +3,7 @@
 [[combinable]]
 void motor(interface motor_i server i, motor_t &pin) {
   timer t;
-  unsigned duty = 0, state = 0, time, status, disabled = 1;
-  const unsigned delay = XS1_TIMER_HZ / PWM_SCALE;
+  unsigned duty = 0, time, status, disabled = 1;
 
   t :> time;
   pin.status :> status;
