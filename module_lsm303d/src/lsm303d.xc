@@ -119,7 +119,7 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
         pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*current_pitch : pitch;
 
         // wait 500ms for reliable data
-        if (!reliable && time > 500 * XS1_TIMER_KHZ)
+        if (!reliable && (time > 500 * XS1_TIMER_KHZ || time < 0))
           reliable = 1;
 
         acc_position++;
