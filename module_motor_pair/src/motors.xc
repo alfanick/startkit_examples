@@ -32,7 +32,7 @@ void motor(interface motor_i server i, motor_t &pin) {
       case duty => t when timerafter(time) :> void:
         pin.disable <: disabled;
 
-        time += 125 * (disabled ? PWM_RESOLUTION - duty : duty);
+        time += 50 * (disabled ? PWM_RESOLUTION - duty : duty);
 
         disabled = !disabled;
 
