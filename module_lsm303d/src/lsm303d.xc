@@ -1,5 +1,7 @@
 #include "lsm303d.h"
 
+#include <math.h>
+
 #define MIN(a,b) ((b) ^ (((a) ^ (b)) & -((a) < (b))))
 #define MAX(a,b) ((a) ^ (((a) ^ (b)) & -((a) < (b))))
 
@@ -66,7 +68,11 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
   timer t;
 
   vector3d acc_buffer[3], mag_buffer[3];
+  vector3d acc_median;
   unsigned acc_position = 0, mag_position = 0;
+  int reliable = 0;
+  float lowpass = 0.02f;
+  float pitch = 0.0;
 
   lsm303d_init(pin);
   t :> time;
@@ -77,7 +83,7 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
         v = acc_buffer[acc_position];
         break;
       case i.accelerometer(vector3d &v):
-        v = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
+        v = acc_median;
         break;
       case i.magnetometer_raw(vector3d &v):
         v = mag_buffer[mag_position];
@@ -86,14 +92,39 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
         v = median_vector3d(mag_buffer[0], mag_buffer[1], mag_buffer[2]);
         break;
 
+      case i.set_lowpass(int l):
+        lowpass = ((float)l)/1000.0f;
+        reliable = 0;
+        break;
+
+      case i.get_lowpass() -> int l:
+        l = (int)(lowpass * 1000.0f);
+        break;
+
+      case i.get_pitch() -> float p:
+        p = pitch;
+        break;
+
       case t when timerafter(time) :> void:
         time += 1 * XS1_TIMER_KHZ;
 
-        lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
-        lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
+        lsm303d_read_accelerometer(pin, acc_buffer[acc_position]);
+//        lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
 
+        acc_median = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
+
+        float current_pitch = atan(((float)acc_median.z) / sqrt(acc_median.x * acc_median.x +
+                                                       acc_median.y * acc_median.y));
+
+        pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*current_pitch : pitch;
+
+        // wait 500ms for reliable data
+        if (!reliable && time > 500 * XS1_TIMER_KHZ)
+          reliable = 1;
+
+        acc_position++;
         acc_position %= 3;
-        mag_position %= 3;
+//        mag_position %= 3;
 
         break;
     }

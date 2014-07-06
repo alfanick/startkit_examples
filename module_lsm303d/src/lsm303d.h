@@ -22,6 +22,11 @@ interface lsm303d_i {
 
   void magnetometer_raw(vector3d &v);
   void magnetometer(vector3d &v);
+
+  float get_pitch();
+
+  int get_lowpass();
+  void set_lowpass(int i);
 };
 
 typedef interface lsm303d_i client lsm303d_client;

@@ -15,9 +15,9 @@ void motor(interface motor_i server i, motor_t &pin) {
         disabled = 0;
 
         if (speed == 0)
-          pin.disable <: 1;
-        else if (speed < 500)
-          duty = 500;
+          pin.disable <: 0;
+        else if (speed < 250)
+          duty = 250;
         break;
 
       case !disabled => pin.status when pinsneq(status) :> status:
@@ -31,7 +31,7 @@ void motor(interface motor_i server i, motor_t &pin) {
       case duty => t when timerafter(time) :> void:
         pin.disable <: disabled;
 
-        time += 50 * (disabled ? PWM_RESOLUTION - duty : duty);
+        time += 125 * (disabled ? PWM_RESOLUTION - duty : duty);
 
         disabled = !disabled;
 
