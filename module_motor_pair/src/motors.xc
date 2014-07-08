@@ -57,6 +57,10 @@ void motor(interface motor_i server i, motor_t &pin) {
   static unsigned time[2][2] = { {0, 0}, {0, 0} };
   static unsigned state[2];
 
+  if (hall == (1<<16)) {
+    time[0][0] = time[0][1] = time[1][0] = time[1][1] = 0;
+  };
+
   t :> current_time;
 
   current_state = (hall & 0b1100) >> 2;
@@ -156,6 +160,7 @@ void motors_logic(interface motors_i server i,
       case t when timerafter(time) :> void:
         left_rpm = 0;
         right_rpm = 0;
+        hall_update((1<<16), t);
         time += 1000 * XS1_TIMER_KHZ;
         break;
 
