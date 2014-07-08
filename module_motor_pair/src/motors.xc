@@ -12,13 +12,10 @@ void motor(interface motor_i server i, motor_t &pin) {
     select {
       case i.set(unsigned speed):
         disabled = 0;
+        duty = speed;
 
-        if (speed == 0) {
+        if (speed == 0)
           pin.disable <: 0;
-          duty = 0;
-        } else {
-          duty = speed * (PWM_RESOLUTION-500) / PWM_RESOLUTION + 500;
-        }
         break;
 
       case !disabled => pin.status when pinsneq(status) :> status:
