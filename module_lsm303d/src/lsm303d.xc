@@ -113,13 +113,12 @@ void lsm303d(interface lsm303d_i server i, lsm303d_t &pin) {
 
         acc_median = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
 
-        float current_pitch = atan(((float)acc_median.z) / sqrt(acc_median.x * acc_median.x +
+        float current_pitch = atan2(acc_median.z, sqrt(acc_median.x * acc_median.x +
                                                        acc_median.y * acc_median.y));
 
         pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*current_pitch : pitch;
 
-        // wait 500ms for reliable data
-        if (!reliable && (time > 500 * XS1_TIMER_KHZ || time < 0))
+        if (!reliable)
           reliable = 1;
 
         acc_position++;
