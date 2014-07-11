@@ -36,12 +36,16 @@ typedef interface adc {
   [[clears_notification]]  int read(unsigned short adc_val[4]);
 //Call to client to indicate aquisition complete. Behaves a bit like ADC finish interrupt. Optional.
   [[notification]]  slave void complete(void);
+
+  void trigger_from_miso(in buffered port:8 * movable miso);
+  in buffered port:8 * movable miso_from_trigger();
 } startkit_adc_if;
 
-[[combinable]]
 //Runs ADC task. Very low MIPS consumption so is good candidate for combining with other low speed tasks
 //Pass i_adc control inteface and automatic trigger period in microseconds.
 //If trigger period is set to zero, ADC will only convert on trigger() call.
 void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period);
 
 #endif /* ADC_H_ */
+
+/* vim: set ft=xc: */

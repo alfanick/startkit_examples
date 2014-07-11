@@ -5,7 +5,7 @@
 #include <print.h>
 #include "startkit_adc.h"
 
-out port adc_sample = ADC_TRIG_PORT;            //Trigger port for ADC - defined in STARTKIT.xn
+out port * movable adc_sample;            //Trigger port for ADC - defined in STARTKIT.xn
 
 #pragma select handler                          //Special function to allow select on inuint primative
 void get_adc_data(chanend c_adc, unsigned &data){
@@ -42,19 +42,18 @@ static void init_adc_periph(chanend c) { //Configures the ADC peripheral for thi
      write_periph_32(adc_tile, 2, 0x20, 1, data);
 
      time = 0;
-     adc_sample <: 0 @ time;       //Ensure trigger startes low. Grab timestamp into time
+     *adc_sample <: 0 @ time;       //Ensure trigger startes low. Grab timestamp into time
 
      for (int i = 0; i < 6; i++) { //Do initial triggers. Do 6 calibrate and initialise
        time += ADC_TRIG_DELAY;
-       adc_sample @ time <: 1;     //Rising edge triggers ADC
+       *adc_sample @ time <: 1;     //Rising edge triggers ADC
        time += ADC_TRIG_DELAY;
-       adc_sample @ time <: 0;     //Falling edge
+       *adc_sample @ time <: 0;     //Falling edge
      }
      time += ADC_TRIG_DELAY;
-     adc_sample @ time <: 0;       //Final delay to ensure 0 is asserted for minimum period
+     *adc_sample @ time <: 0;       //Final delay to ensure 0 is asserted for minimum period
 }
 
-[[combinable]]
 void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
   unsigned adc_state = 0;                 //State machine. 0 = idle, 1-8 = generating triggers, 9 = rx data
   unsigned adc_samps[2] = {0, 0};         //The samples (2 lots of 16 bits packed into to unsigned ints)
@@ -62,9 +61,9 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
   int trig_period_time;                   //Used to time periodic triggers
   timer t_trig_state;                     //Timer for ADC trigger I/O pulse gen
   timer t_trig_periodic;                  //Timer for periodic ADC trigger
+  int initialized = 0;
 
   init_adc_network();                     //Ensure it works in flash as well as run/debug
-  init_adc_periph(c_adc);                 //Setup the ADC
 
   trigger_period *= 100;                  //Comvert to microseconds
 
@@ -76,7 +75,7 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
     select{
       case i_adc.trigger():               //Start ADC state machine via interface method call
         if (adc_state == 0){
-          adc_sample <: 1;                //Send first rising edge to trigger ADC
+          *adc_sample <: 1;                //Send first rising edge to trigger ADC
           t_trig_state :> trig_pulse_time;//Grab current time
           trig_pulse_time += ADC_TRIG_DELAY;//Setup trigger time for next edge (falling)
           adc_state = 1;                  //Start trigger state machine
@@ -88,7 +87,7 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
       case trigger_period => t_trig_periodic when timerafter(trig_period_time) :> void:
         trig_period_time += trigger_period;//Setup next trigger event
         if (adc_state == 0){              //Start tigger state machine
-          adc_sample <: 1;                //Send first rising edge to trigger ADC
+          *adc_sample <: 1;                //Send first rising edge to trigger ADC
           t_trig_state :> trig_pulse_time;//Grab current time
           trig_pulse_time += ADC_TRIG_DELAY;//Setup trigger time for next edge (falling)
           adc_state = 1;                  //Start trigger state machine
@@ -100,11 +99,11 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
       case (adc_state > 0 && adc_state < 9) => t_trig_state when timerafter(trig_pulse_time) :> void:
         adc_state++;
         if (adc_state == 9){              //Assert low when finished
-          adc_sample <: 0;
+          *adc_sample <: 0;
           break;
         }
-        if (adc_state & 0b0001) adc_sample <: 1;  //Do rising edge if even count
-        else adc_sample <: 0;                     //Do falling if odd
+        if (adc_state & 0b0001) *adc_sample <: 1;  //Do rising edge if even count
+        else *adc_sample <: 0;                     //Do falling if odd
         trig_pulse_time += ADC_TRIG_DELAY;        //Setup next edge time trigger
         break;
 
@@ -124,6 +123,19 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
         adc_val[3] = adc_samps[1] & 0xffff; //Ch 3 is 2 LSB
         ret_val = adc_state ? 0 : 1;        //Return zero if mid conversion, 1 if complete
       break;
+
+      case i_adc.trigger_from_miso(in buffered port:8 * movable miso):
+        adc_sample = reconfigure_port(move(miso), out port);
+
+        if (!initialized) {
+          init_adc_periph(c_adc);                 //Setup the ADC
+          initialized = 1;
+        }
+        break;
+
+      case i_adc.miso_from_trigger() -> in buffered port:8 * movable miso:
+        miso = reconfigure_port(move(adc_sample), in buffered port:8);
+        break;
 
     }//select
   }//while 1
