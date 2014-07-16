@@ -147,12 +147,18 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
       case i_adc.set_trigger(out port * unsafe t):
         unsafe {
           has_adc = 1;
+          // reinit ADC
+          initialized = 0;
           adc_sample = t;
         }
         break;
 
       case i_adc.get_trigger() -> out port * unsafe t:
         unsafe {
+          // disable ADC
+          unsigned d = 0x0;
+          write_periph_32(adc_tile, 2, 0x20, 1, &d);
+
           has_adc = 0;
           t = adc_sample;
         }
