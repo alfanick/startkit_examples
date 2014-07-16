@@ -69,7 +69,7 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
   timer t_trig_state;                     //Timer for ADC trigger I/O pulse gen
   timer t_trig_periodic;                  //Timer for periodic ADC trigger
   int initialized = 0;
-
+  int has_adc = 0;
   init_adc_network();                     //Ensure it works in flash as well as run/debug
 
   trigger_period *= 100;                  //Comvert to microseconds
@@ -81,6 +81,13 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
   while(1){
     select{
       case i_adc.trigger():               //Start ADC state machine via interface method call
+        if (!has_adc)
+          break;
+        if (!initialized) {
+          init_adc_periph(c_adc);
+          initialized = 1;
+        }
+
         if (adc_state == 0){
           unsafe {
             *adc_sample <: 1;                //Send first rising edge to trigger ADC
@@ -137,23 +144,19 @@ void adc_task(server startkit_adc_if i_adc, chanend c_adc, int trigger_period){
         ret_val = adc_state ? 0 : 1;        //Return zero if mid conversion, 1 if complete
       break;
 
-      case i_adc.trigger_from_miso(in buffered port:8 * unsafe miso):
+      case i_adc.set_trigger(out port * unsafe t):
         unsafe {
-          adc_sample = reconfigure_port(miso, out port);
-        }
-
-        if (!initialized) {
-          init_adc_periph(c_adc);                 //Setup the ADC
-          initialized = 1;
+          has_adc = 1;
+          adc_sample = t;
         }
         break;
 
-      case i_adc.miso_from_trigger() -> in buffered port:8 * unsafe miso:
+      case i_adc.get_trigger() -> out port * unsafe t:
         unsafe {
-          miso = reconfigure_port(adc_sample, in buffered port:8);
+          has_adc = 0;
+          t = adc_sample;
         }
         break;
-
     }//select
   }//while 1
 }

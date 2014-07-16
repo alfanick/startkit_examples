@@ -37,8 +37,8 @@ typedef interface adc {
 //Call to client to indicate aquisition complete. Behaves a bit like ADC finish interrupt. Optional.
   [[notification]]  slave void complete(void);
 
-  void trigger_from_miso(in buffered port:8 * unsafe miso);
-  in buffered port:8 * unsafe miso_from_trigger();
+  void set_trigger(out port * unsafe t);
+  out port * unsafe get_trigger();
 } startkit_adc_if;
 
 //Runs ADC task. Very low MIPS consumption so is good candidate for combining with other low speed tasks

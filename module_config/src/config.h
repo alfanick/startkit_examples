@@ -5,9 +5,7 @@
 
 typedef fl_SPIPorts config_flash_port;
 
-void config_open(config_flash_port&);
-void config_save(int position, const int data[], const static int size);
-void config_read(int position, int data[], const static int size);
-void config_close();
+void config_save(config_flash_port& p, int position, const int data[], const static int size, unsigned char page[]);
+void config_read(config_flash_port& p, int position, int data[], const static int size, unsigned char page[]);
 
 #endif
