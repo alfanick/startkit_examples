@@ -9,23 +9,28 @@ void imu10_init(imu10_t &pin) {
   unsigned char data[1];
   i2c_master_init(pin);
 
-  // 1600Hz
+  // LSM303D Config
+
+  //   Enable XYZ
+  //   1600Hz Acc
   data[0] = 0b10100111;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x20, data, 1, pin);
 
-  // acc = 2g
+  //    773Hz AA
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x21, data, 1, pin);
 
-  // no temp and high res
+  //    Compass High Resolution
+  //    50Hz Compass
   data[0] = 0b01110000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x24, data, 1, pin);
 
-  // mag = 2g
+  //    2 Gauss Compass
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x25, data, 1, pin);
 
-  // enable mag
+  //    Normal Mode
+  //    Enable Compass
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x26, data, 1, pin);
 

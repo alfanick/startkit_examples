@@ -7,6 +7,10 @@
 #define LSM303D_ADDRESS 0b0011101
 #endif
 
+#ifndef L3GD20H_ADDRESS
+#define L3GD20H_ADDRESS 0b1101011
+#endif
+
 typedef r_i2c imu10_t;
 
 typedef struct vector3d {
