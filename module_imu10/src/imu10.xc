@@ -93,6 +93,8 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
   int reliable = 0;
   float lowpass = 0.02f;
   float pitch = 0.0;
+  float accelerometer_pitch = 0.0;
+  float gyroscope_pitch = 0.0;
 
   imu10_init(pin);
   t :> time;
@@ -103,7 +105,7 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
         v = acc_buffer[acc_position];
         break;
       case i.accelerometer(vector3d &v):
-        v = acc_median;
+        v = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
         break;
       case i.magnetometer_raw(vector3d &v):
         v = mag_buffer[mag_position];
@@ -131,25 +133,38 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
         p = pitch;
         break;
 
+      case i.accelerometer_pitch() -> float p:
+        p = accelerometer_pitch;
+        break;
+
+      case i.gyroscope_pitch() -> float p:
+        p = gyroscope_pitch;
+        break;
+
       case t when timerafter(time) :> void:
         time += 1 * XS1_TIMER_KHZ;
 
-        lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
-        lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
-        l3gd20h_read_gyroscope(pin, gyro_buffer[gyro_position++]);
+        lsm303d_read_accelerometer(pin, acc_buffer[acc_position]);
+        /* lsm303d_read_magnetometer(pin, mag_buffer[mag_position]); */
+        l3gd20h_read_gyroscope(pin, gyro_buffer[gyro_position]);
 
-        acc_median = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
 
-        float current_pitch = atan2(acc_median.z, sqrt(acc_median.x * acc_median.x +
-                                                       acc_median.y * acc_median.y));
+        accelerometer_pitch = atan2(acc_buffer[acc_position].z, sqrt(acc_buffer[acc_position].x * acc_buffer[acc_position].x +
+                                                       acc_buffer[acc_position].y * acc_buffer[acc_position].y));
 
-        pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*current_pitch : pitch;
+        gyroscope_pitch = atan2(gyro_buffer[gyro_position].z, sqrt(gyro_buffer[gyro_position].x * gyro_buffer[gyro_position].x +
+                                                       gyro_buffer[gyro_position].y * gyro_buffer[gyro_position].y));
+
+        pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*accelerometer_pitch : pitch;
 
         if (!reliable)
           reliable = 1;
 
+        acc_position++;
         acc_position %= 3;
+        mag_position++;
         mag_position %= 3;
+        gyro_position++;
         gyro_position %= 3;
 
         break;

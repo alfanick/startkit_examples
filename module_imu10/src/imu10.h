@@ -22,12 +22,14 @@ typedef struct vector3d {
 interface imu10_i {
   void accelerometer_raw(vector3d &v);
   void accelerometer(vector3d &v);
+  float accelerometer_pitch();
 
   void magnetometer_raw(vector3d &v);
   void magnetometer(vector3d &v);
 
   void gyroscope_raw(vector3d &v);
   void gyroscope(vector3d &v);
+  float gyroscope_pitch();
 
   float get_pitch();
 
