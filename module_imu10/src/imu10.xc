@@ -138,7 +138,7 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
         break;
 
       case i.gyroscope_pitch() -> float p:
-        p = gyroscope_pitch;
+        p = gyroscope_pitch * 8.75 / 1000.0;
         break;
 
       case t when timerafter(time) :> void:
