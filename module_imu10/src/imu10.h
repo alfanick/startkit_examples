@@ -26,6 +26,9 @@ interface imu10_i {
   void magnetometer_raw(vector3d &v);
   void magnetometer(vector3d &v);
 
+  void gyroscope_raw(vector3d &v);
+  void gyroscope(vector3d &v);
+
   float get_pitch();
 
   int get_lowpass();
@@ -36,10 +39,11 @@ typedef interface imu10_i client imu10_client;
 
 void imu10_init(imu10_t &pin);
 
-inline void lsm303d_read_vector(imu10_t &pin, unsigned char reg, vector3d &v);
+inline void read_vector(unsigned char address, imu10_t &pin, unsigned char reg, vector3d &v);
 
 inline void lsm303d_read_accelerometer(imu10_t &pin, vector3d &v);
 inline void lsm303d_read_magnetometer(imu10_t &pin, vector3d &v);
+inline void l3gd20h_read_gyroscope(imu10_t &pin, vector3d &v);
 
 [[combinable]]
 void imu10(interface imu10_i server i, imu10_t &pin);

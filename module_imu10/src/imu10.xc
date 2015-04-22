@@ -11,34 +11,41 @@ void imu10_init(imu10_t &pin) {
 
   // LSM303D Config
 
-  //   Enable XYZ
-  //   1600Hz Acc
+  //    Enable XYZ
+  //    1600Hz Acc
   data[0] = 0b10100111;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x20, data, 1, pin);
 
-  //    773Hz AA
+  //     773Hz AA
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x21, data, 1, pin);
 
-  //    Compass High Resolution
-  //    50Hz Compass
+  //     Compass High Resolution
+  //     50Hz Compass
   data[0] = 0b01110000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x24, data, 1, pin);
 
-  //    2 Gauss Compass
+  //     2 Gauss Compass
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x25, data, 1, pin);
 
-  //    Normal Mode
-  //    Enable Compass
+  //     Normal Mode
+  //     Enable Compass
   data[0] = 0b00000000;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x26, data, 1, pin);
 
+
+  // L3GD20H Config
+
+  //    Enable XYZ
+  //    100Hz
+  data[0] = 0b00111111;
+  i2c_master_write_reg(L3GD20H_ADDRESS, 0x20, data, 1, pin);
 }
 
-inline void lsm303d_read_vector(imu10_t &pin, unsigned char reg, vector3d &v) {
+inline void read_vector(unsigned char address, imu10_t &pin, unsigned char reg, vector3d &v) {
   unsigned char data[6];
-  i2c_master_read_reg(LSM303D_ADDRESS, reg | (1 << 7), data, 6, pin);
+  i2c_master_read_reg(address, reg | (1 << 7), data, 6, pin);
 
   v.x = data[1] << 8 | data[0];
   v.y = data[3] << 8 | data[2];
@@ -46,11 +53,15 @@ inline void lsm303d_read_vector(imu10_t &pin, unsigned char reg, vector3d &v) {
 }
 
 inline void lsm303d_read_accelerometer(imu10_t &pin, vector3d &v) {
-  lsm303d_read_vector(pin, 0x28, v);
+  read_vector(LSM303D_ADDRESS, pin, 0x28, v);
 }
 
 inline void lsm303d_read_magnetometer(imu10_t &pin, vector3d &v) {
-  lsm303d_read_vector(pin, 0x08, v);
+  read_vector(LSM303D_ADDRESS, pin, 0x08, v);
+}
+
+inline void l3gd20h_read_gyroscope(imu10_t &pin, vector3d &v) {
+  read_vector(L3GD20H_ADDRESS, pin, 0x28, v);
 }
 
 inline int median(int a, int b, int c) {
@@ -72,9 +83,13 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
   unsigned time;
   timer t;
 
-  vector3d acc_buffer[3], mag_buffer[3];
+  vector3d acc_buffer[3],
+           mag_buffer[3],
+           gyro_buffer[3];
   vector3d acc_median;
-  unsigned acc_position = 0, mag_position = 0;
+  unsigned acc_position = 0,
+           mag_position = 0,
+           gyro_position = 0;
   int reliable = 0;
   float lowpass = 0.02f;
   float pitch = 0.0;
@@ -96,6 +111,12 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
       case i.magnetometer(vector3d &v):
         v = median_vector3d(mag_buffer[0], mag_buffer[1], mag_buffer[2]);
         break;
+      case i.gyroscope_raw(vector3d &v):
+        v = gyro_buffer[gyro_position];
+        break;
+      case i.gyroscope(vector3d &v):
+        v = median_vector3d(gyro_buffer[0], gyro_buffer[1], gyro_buffer[2]);
+        break;
 
       case i.set_lowpass(int l):
         lowpass = ((float)l)/1000.0f;
@@ -113,8 +134,9 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
       case t when timerafter(time) :> void:
         time += 1 * XS1_TIMER_KHZ;
 
-        lsm303d_read_accelerometer(pin, acc_buffer[acc_position]);
-//        lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
+        lsm303d_read_accelerometer(pin, acc_buffer[acc_position++]);
+        lsm303d_read_magnetometer(pin, mag_buffer[mag_position++]);
+        l3gd20h_read_gyroscope(pin, gyro_buffer[gyro_position++]);
 
         acc_median = median_vector3d(acc_buffer[0], acc_buffer[1], acc_buffer[2]);
 
@@ -126,9 +148,9 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
         if (!reliable)
           reliable = 1;
 
-        acc_position++;
         acc_position %= 3;
-//        mag_position %= 3;
+        mag_position %= 3;
+        gyro_position %= 3;
 
         break;
     }
