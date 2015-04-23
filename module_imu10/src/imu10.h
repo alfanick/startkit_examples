@@ -39,6 +39,8 @@ interface imu10_i {
 
 typedef interface imu10_i client imu10_client;
 
+float kalman_filter(float, float, float, float, float, float);
+
 void imu10_init(imu10_t &pin);
 
 inline void read_vector(unsigned char address, imu10_t &pin, unsigned char reg, vector3d &v);
