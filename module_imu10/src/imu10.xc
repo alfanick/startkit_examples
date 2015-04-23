@@ -12,8 +12,8 @@ void imu10_init(imu10_t &pin) {
   // LSM303D Config
 
   //    Enable XYZ
-  //    1600Hz Acc
-  data[0] = 0b10100111;
+  //    200Hz Acc
+  data[0] = 0b01110111;
   i2c_master_write_reg(LSM303D_ADDRESS, 0x20, data, 1, pin);
 
   //     773Hz AA
@@ -38,9 +38,13 @@ void imu10_init(imu10_t &pin) {
   // L3GD20H Config
 
   //    Enable XYZ
-  //    100Hz
-  data[0] = 0b00111111;
+  //    200Hz
+  data[0] = 0b01001111;
   i2c_master_write_reg(L3GD20H_ADDRESS, 0x20, data, 1, pin);
+
+  //    500dps
+  data[0] = 0b00010000;
+  i2c_master_write_reg(L3GD20H_ADDRESS, 0x23, data, 1, pin);
 }
 
 float kalman_filter(float new_angle, float new_rate, float dt, float Qa, float Qb, float Rm) {
@@ -183,16 +187,26 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
         break;
 
       case i.gyroscope_pitch() -> float p:
-        p = gyroscope_pitch * 8.75 / 1000.0;
+        p = gyroscope_pitch;
         break;
 
       case t when timerafter(time) :> void:
-        time += 10 * XS1_TIMER_KHZ;
+        time += 5 * XS1_TIMER_KHZ;
+
+        acc_position++;
+        acc_position %= 3;
+        mag_position++;
+        mag_position %= 3;
+        gyro_position++;
+        gyro_position %= 3;
 
         lsm303d_read_accelerometer(pin, acc_buffer[acc_position]);
         /* lsm303d_read_magnetometer(pin, mag_buffer[mag_position]); */
         l3gd20h_read_gyroscope(pin, gyro_buffer[gyro_position]);
 
+        gyro_buffer[gyro_position].x -= -26;
+        gyro_buffer[gyro_position].y -= -98;
+        gyro_buffer[gyro_position].z -= -49;
 
         accelerometer_pitch = atan2(acc_buffer[acc_position].z, sqrt(acc_buffer[acc_position].x * acc_buffer[acc_position].x +
                                                        acc_buffer[acc_position].y * acc_buffer[acc_position].y));
@@ -202,20 +216,14 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
 
 
         if (kalman_enabled) {
-          pitch = kalman_filter(accelerometer_pitch, gyroscope_pitch, 0.01, 0.001, 0.003, 0.011);
+          /* pitch = kalman_filter(accelerometer_pitch, gyro_buffer[gyro_position].x * 17.50 / 1000.0, 0.005, 0.001, 0.003, 0.03); */
+          pitch = kalman_filter(accelerometer_pitch, -gyro_buffer[gyro_position].x * 17.50 * M_PI / 180.0 / 1000.0, 0.01, 0.001, 0.003, 0.011);
         } else {
           pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*accelerometer_pitch : pitch;
         }
 
         if (!reliable)
           reliable = 1;
-
-        acc_position++;
-        acc_position %= 3;
-        mag_position++;
-        mag_position %= 3;
-        gyro_position++;
-        gyro_position %= 3;
 
         break;
     }
