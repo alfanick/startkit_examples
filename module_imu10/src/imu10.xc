@@ -217,7 +217,7 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
 
         if (kalman_enabled) {
           /* pitch = kalman_filter(accelerometer_pitch, gyro_buffer[gyro_position].x * 17.50 / 1000.0, 0.005, 0.001, 0.003, 0.03); */
-          pitch = kalman_filter(accelerometer_pitch, -gyro_buffer[gyro_position].x * 17.50 * M_PI / 180.0 / 1000.0, 0.01, 0.001, 0.003, 0.011);
+          pitch = kalman_filter(accelerometer_pitch, -gyro_buffer[gyro_position].x * 17.50 * M_PI / 180.0 / 1000.0, 0.005, 0.001, 0.003, 0.011);
         } else {
           pitch = reliable ? (1.0f-lowpass)*pitch + lowpass*accelerometer_pitch : pitch;
         }
