@@ -35,6 +35,8 @@ interface imu10_i {
 
   int get_lowpass();
   void set_lowpass(int i);
+
+  void use_kalman(int state);
 };
 
 typedef interface imu10_i client imu10_client;

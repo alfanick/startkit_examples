@@ -150,6 +150,10 @@ void imu10(interface imu10_i server i, imu10_t &pin) {
 
   while (1) {
     select {
+      case i.use_kalman(int state):
+        kalman_enabled = state;
+        break;
+
       case i.accelerometer_raw(vector3d &v):
         v = acc_buffer[acc_position];
         break;
